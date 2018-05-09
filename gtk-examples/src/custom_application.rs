@@ -123,7 +123,7 @@ impl CustomApplication {
         unsafe {
             match glib::Object::new(Self::static_type(), &[("application_id", &application_id.into()),
                                                            ("flags", &flags)]){
-                Ok(ref obj) => Ok(obj.downcast_unchecked()),
+                Ok(obj) => Ok(obj.downcast_unchecked()),
                 Err(_) => Err(glib::BoolError("Failed to create application"))
             }
         }
