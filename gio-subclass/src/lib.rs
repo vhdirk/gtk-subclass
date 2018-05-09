@@ -1,4 +1,4 @@
-
+extern crate libc;
 #[macro_use]
 extern crate glib;
 extern crate gio;
