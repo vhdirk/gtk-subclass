@@ -10,7 +10,6 @@ extern crate gio_sys as gio_ffi;
 #[macro_use]
 extern crate gobject_subclass;
 
-mod application;
-pub use application::{Application,
-                      ApplicationClassExt,
-                      ApplicationImpl};
+// If we make application private (which it should be), `box_gapplication_impl` stops working.
+pub mod application;
+pub use application::*;

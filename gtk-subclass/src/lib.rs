@@ -22,3 +22,5 @@ extern crate gio_subclass;
 
 pub mod cell_renderer;
 pub mod application;
+
+pub use application::*;

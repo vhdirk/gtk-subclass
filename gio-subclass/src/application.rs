@@ -64,7 +64,7 @@ macro_rules! box_gapplication_impl(
     ($name:ident) => {
         box_object_impl!($name);
 
-        impl<T: ApplicationBase> ApplicationImpl<T> for Box<$name<T>>
+        impl<T: $crate::application::ApplicationBase>  $crate::application::ApplicationImpl<T> for Box<$name<T>>
         {
 
         }

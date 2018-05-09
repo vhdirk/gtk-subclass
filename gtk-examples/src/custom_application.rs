@@ -101,8 +101,6 @@ mod imp {
 
 }
 
-use gobject_subclass::object::*;
-use std::ops;
 
 glib_wrapper! {
     pub struct CustomApplication(Object<imp::CustomApplication>):
@@ -139,7 +137,7 @@ impl Deref for CustomApplication {
     fn deref(&self) -> &Self::Target {
         unsafe {
 
-            let base: application::Application = from_glib_borrow(self.to_glib_none().0);
+            let base: Application = from_glib_borrow(self.to_glib_none().0);
             let imp = base.get_impl();
             let imp = imp.downcast_ref::<imp::CustomApplication>().unwrap();
             // Cast to a raw pointer to get us an appropriate lifetime: the compiler

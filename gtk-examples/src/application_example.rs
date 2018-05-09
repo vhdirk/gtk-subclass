@@ -20,6 +20,8 @@ extern crate pango;
 #[macro_use]
 extern crate gobject_subclass;
 
+#[macro_use]
+extern crate gio_subclass;
 extern crate gtk_subclass;
 
 use gio::prelude::*;
