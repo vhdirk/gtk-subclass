@@ -1,5 +1,7 @@
 [workspace]
 
 members = [
+    "gio-subclass",
+    "gtk-subclass",
     "gtk-examples"
 ]

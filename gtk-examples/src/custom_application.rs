@@ -18,7 +18,10 @@ use gio_ffi;
 
 use gobject_subclass::object::*;
 
-use gtk_subclass::application;
+use gio_subclass::{Application as GApplication,
+                   ApplicationClassExt as GApplicationClassExt,
+                   ApplicationImpl as GApplicationImpl};
+
 use gtk_subclass::application::*;
 
 
@@ -76,6 +79,7 @@ mod imp {
     }
 
     impl ApplicationImpl<Application> for CustomApplication {}
+    impl GApplicationImpl<Application> for CustomApplication {}
 
     pub struct CustomApplicationStatic;
 
@@ -93,6 +97,8 @@ mod imp {
         }
     }
 
+
+
 }
 
 use gobject_subclass::object::*;
@@ -100,7 +106,8 @@ use std::ops;
 
 glib_wrapper! {
     pub struct CustomApplication(Object<imp::CustomApplication>):
-        [application::Application => InstanceStruct<application::Application>,
+        [Application => InstanceStruct<Application>,
+         GApplication => InstanceStruct<GApplication>,
          gtk::Application => gtk_ffi::GtkApplication,
          gio::Application => gio_ffi::GApplication];
 

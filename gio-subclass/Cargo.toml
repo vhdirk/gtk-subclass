@@ -1,5 +1,5 @@
 [package]
-name = "gtk-subclass"
+name = "gio-subclass"
 version = "0.1.0"
 authors = ["Sebastian Dröge <sebastian@centricular.com>",
            "Dirk Van Haerenborgh <vhdirk@gmail.com>"]
@@ -11,17 +11,7 @@ gobject-subclass = { git="https://github.com/sdroege/gobject-subclass" }
 
 glib-sys = { git = "https://github.com/gtk-rs/sys" }
 gobject-sys = { git = "https://github.com/gtk-rs/sys" }
-gtk-sys = { git = "https://github.com/gtk-rs/sys" }
-gdk-sys = { git = "https://github.com/gtk-rs/sys" }
-cairo-sys-rs = { git = "https://github.com/gtk-rs/cairo" }
 gio-sys = { git = "https://github.com/gtk-rs/sys" }
 
 glib = { git = "https://github.com/gtk-rs/glib" }
-gtk = { git = "https://github.com/gtk-rs/gtk" }
-gdk = { git = "https://github.com/gtk-rs/gdk" }
-gdk-pixbuf = { git = "https://github.com/gtk-rs/gdk-pixbuf" }
 gio = { git = "https://github.com/gtk-rs/gio" }
-cairo-rs = { git = "https://github.com/gtk-rs/cairo" }
-pango = { git = "https://github.com/gtk-rs/pango" }
-
-gio-subclass= { path= "../gio-subclass"}
