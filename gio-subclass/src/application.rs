@@ -1,25 +1,23 @@
-use std::mem;
-use std::ptr;
-use libc;
+use gio;
+use gio_ffi;
 use glib;
 use glib::translate::*;
 use glib::IsA;
 use glib_ffi;
 use gobject_ffi;
-use gio;
-use gio_ffi;
+use libc;
+use std::mem;
+use std::ptr;
 
 use gobject_subclass::anyimpl::*;
 use gobject_subclass::object::*;
 
-
-pub trait ApplicationImpl<T: ApplicationBase>: ObjectImpl<T> + AnyImpl + 'static
-{
-    fn startup(&self, application: &T){
+pub trait ApplicationImpl<T: ApplicationBase>: ObjectImpl<T> + AnyImpl + 'static {
+    fn startup(&self, application: &T) {
         application.parent_startup();
     }
 
-    fn activate(&self, application: &T){
+    fn activate(&self, application: &T) {
         application.parent_activate();
     }
 
@@ -27,14 +25,13 @@ pub trait ApplicationImpl<T: ApplicationBase>: ObjectImpl<T> + AnyImpl + 'static
         application.parent_open(files, hint)
     }
 
-    fn command_line(&self, application: &T, cmd_line: &gio::ApplicationCommandLine) -> i32{
+    fn command_line(&self, application: &T, cmd_line: &gio::ApplicationCommandLine) -> i32 {
         application.parent_command_line(cmd_line)
     }
 
-    fn local_command_line(&self, application: &T, arguments: &Vec<String>) -> Result<i32, ()>{
+    fn local_command_line(&self, application: &T, arguments: &Vec<String>) -> Option<i32> {
         application.parent_local_command_line(arguments)
     }
-
 }
 
 pub trait ApplicationImplExt<T> {}
@@ -46,17 +43,15 @@ impl<S: ApplicationImpl<T>, T: ObjectType + glib::IsA<gio::Application>> Applica
 
 any_impl!(ApplicationBase, ApplicationImpl);
 
-pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType
-{
+pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType {
     fn parent_startup(&self) {
         unsafe {
             let klass = self.get_class();
             let parent_klass = (*klass).get_parent_class() as *const gio_ffi::GApplicationClass;
-            (*parent_klass).startup
-                           .map(|f| {
-                                f(self.to_glib_none().0)
-                            })
-                            .unwrap_or(())
+            (*parent_klass)
+                .startup
+                .map(|f| f(self.to_glib_none().0))
+                .unwrap_or(())
         }
     }
 
@@ -64,11 +59,10 @@ pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType
         unsafe {
             let klass = self.get_class();
             let parent_klass = (*klass).get_parent_class() as *const gio_ffi::GApplicationClass;
-            (*parent_klass).activate
-                           .map(|f| {
-                                f(self.to_glib_none().0)
-                            })
-                            .unwrap_or(())
+            (*parent_klass)
+                .activate
+                .map(|f| f(self.to_glib_none().0))
+                .unwrap_or(())
         }
     }
 
@@ -76,50 +70,48 @@ pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType
         unsafe {
             let klass = self.get_class();
             let parent_klass = (*klass).get_parent_class() as *const gio_ffi::GApplicationClass;
-            (*parent_klass).open
-                           .map(|f| {
-                               let n_files = files.len() as i32;
-                                f(self.to_glib_none().0,
-                                  files.to_glib_none().0,
-                                  n_files,
-                                  hint.to_glib_none().0)
-                            })
-                            .unwrap_or(())
+            (*parent_klass)
+                .open
+                .map(|f| {
+                    let n_files = files.len() as i32;
+                    f(
+                        self.to_glib_none().0,
+                        files.to_glib_none().0,
+                        n_files,
+                        hint.to_glib_none().0,
+                    )
+                })
+                .unwrap_or(())
         }
     }
 
-    fn parent_command_line(&self, cmd_line: &gio::ApplicationCommandLine) -> i32{
+    fn parent_command_line(&self, cmd_line: &gio::ApplicationCommandLine) -> i32 {
         unsafe {
             let klass = self.get_class();
             let parent_klass = (*klass).get_parent_class() as *const gio_ffi::GApplicationClass;
-            (*parent_klass).command_line
-                           .map(|f| {
-                               f(self.to_glib_none().0,
-                                cmd_line.to_glib_none().0)
-                            })
-                            .unwrap_or(0)
+            (*parent_klass)
+                .command_line
+                .map(|f| f(self.to_glib_none().0, cmd_line.to_glib_none().0))
+                .unwrap_or(0)
         }
     }
 
-    fn parent_local_command_line(&self, arguments: &Vec<String>) -> Result<i32, ()>{
+    fn parent_local_command_line(&self, arguments: &Vec<String>) -> Option<i32> {
         unsafe {
             let klass = self.get_class();
             let parent_klass = (*klass).get_parent_class() as *const gio_ffi::GApplicationClass;
             let mut exit_status = 0;
-            let success = (*parent_klass).local_command_line
-                           .map(|f| {
-                               f(self.to_glib_none().0,
-                                 arguments.to_glib_none().0, //TODO: conversion
-                                 &mut exit_status)
-                            })
-                            .unwrap_or(0);
-            if success > 0{
-                return Ok(exit_status);
-            }
-            Err(())
+            (*parent_klass)
+                .local_command_line
+                .map(|f| {
+                    f(
+                        self.to_glib_none().0,
+                        arguments.to_glib_none().0, //TODO: conversion
+                        &mut exit_status,
+                    )
+                })
         }
     }
-
 }
 
 pub unsafe trait ApplicationClassExt<T: ApplicationBase>
@@ -134,7 +126,6 @@ where
             klass.open = Some(application_open::<T>);
             klass.command_line = Some(application_command_line::<T>);
             klass.local_command_line = Some(application_local_command_line::<T>);
-
         }
     }
 }
@@ -183,7 +174,7 @@ macro_rules! box_gapplication_impl(
                 imp.command_line(application, cmd_line)
             }
 
-            fn local_command_line(&self, application: &T, arguments: &Vec<String>) -> Result<i32, ()>{
+            fn local_command_line(&self, application: &T, arguments: &Vec<String>) -> Option<i32>{
                 let imp: &$name<T> = self.as_ref();
                 imp.local_command_line(application, arguments)
             }
@@ -207,10 +198,8 @@ impl ObjectType for Application {
     object_type_fns!();
 }
 
-
-unsafe extern "C" fn application_startup<T: ApplicationBase>(
-    ptr: *mut gio_ffi::GApplication
-) where
+unsafe extern "C" fn application_startup<T: ApplicationBase>(ptr: *mut gio_ffi::GApplication)
+where
     T::ImplType: ApplicationImpl<T>,
 {
     callback_guard!();
@@ -222,10 +211,8 @@ unsafe extern "C" fn application_startup<T: ApplicationBase>(
     imp.startup(&wrap)
 }
 
-
-unsafe extern "C" fn application_activate<T: ApplicationBase>(
-    ptr: *mut gio_ffi::GApplication
-) where
+unsafe extern "C" fn application_activate<T: ApplicationBase>(ptr: *mut gio_ffi::GApplication)
+where
     T::ImplType: ApplicationImpl<T>,
 {
     callback_guard!();
@@ -236,7 +223,6 @@ unsafe extern "C" fn application_activate<T: ApplicationBase>(
 
     imp.activate(&wrap)
 }
-
 
 unsafe extern "C" fn application_open<T: ApplicationBase>(
     ptr: *mut gio_ffi::GApplication,
@@ -252,9 +238,12 @@ unsafe extern "C" fn application_open<T: ApplicationBase>(
     let wrap: T = from_glib_borrow(ptr as *mut T::InstanceStructType);
     let imp = application.get_impl();
 
-    imp.open(&wrap, &FromGlibContainer::from_glib_none_num(files, num_files as usize), &from_glib_none(hint))
+    imp.open(
+        &wrap,
+        &FromGlibContainer::from_glib_none_num(files, num_files as usize),
+        &from_glib_none(hint),
+    )
 }
-
 
 unsafe extern "C" fn application_command_line<T: ApplicationBase>(
     ptr: *mut gio_ffi::GApplication,
@@ -275,7 +264,7 @@ where
 unsafe extern "C" fn application_local_command_line<T: ApplicationBase>(
     ptr: *mut gio_ffi::GApplication,
     arguments: *mut *mut *mut libc::c_char,
-    exit_status: *mut libc::c_int
+    exit_status: *mut libc::c_int,
 ) -> glib_ffi::gboolean
 where
     T::ImplType: ApplicationImpl<T>,
@@ -287,15 +276,14 @@ where
     let imp = application.get_impl();
 
     //TODO: conversion
-    match imp.local_command_line(&wrap, &from_glib_borrow(arguments)){
-        Ok(status) => {
+    match imp.local_command_line(&wrap, &from_glib_borrow(arguments)) {
+        Some(status) => {
             *exit_status = status;
             1
-        },
-        Err(_) =>  0
+        }
+        None => 0,
     }
 }
-
 
 //  pub before_emit: Option<unsafe extern "C" fn(_: *mut GApplication, _: *mut GVariant)>,
 //  pub after_emit: Option<unsafe extern "C" fn(_: *mut GApplication, _: *mut GVariant)>,
