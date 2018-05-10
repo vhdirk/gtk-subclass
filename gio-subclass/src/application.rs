@@ -133,7 +133,7 @@ pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType {
             let success = (*parent_klass)
                 .local_command_line
                 .map(|f| {
-                    let mut args = arguments.to_glib_none().0;
+                    let mut args = arguments.to_glib_full();
                     f(
                         self.to_glib_none().0,
                         &mut args,
