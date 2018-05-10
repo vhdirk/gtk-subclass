@@ -58,9 +58,6 @@ pub trait ApplicationImpl<T: ApplicationBase>: ObjectImpl<T> + AnyImpl + 'static
     }
 
 
-    //...
-
-
     // fn handle_local_options(&self, application: &T, options: &glib::VariantDict) {
     //     application.handle_local_options(options);
     // }
@@ -105,7 +102,6 @@ pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType {
             (*parent_klass)
                 .open
                 .map(|f| {
-                    //TODO: how do I guarantee pointer safety here?
                     let n_files = files.len() as i32;
                     f(
                         self.to_glib_none().0,
@@ -448,13 +444,14 @@ where
     let wrap: T = from_glib_borrow(ptr as *mut T::InstanceStructType);
     let imp = application.get_impl();
 
-    //TODO: how do I guarantee pointer safety here?
+    //TODO: if arguments is changed in the handler function, how do we release the memory
+    // previously associated with arguments?
     let mut args = FromGlibPtrContainer::from_glib_none(ptr::read(arguments));
 
     match imp.local_command_line(&wrap, &mut args) {
         Some(ret) => {
             *exit_status = ret;
-            ptr::write(arguments, args.to_glib_none().0);
+            ptr::write(arguments, args.to_glib_full()); //take full ownership of the data
             glib_ffi::GTRUE
         }
         None => glib_ffi::GFALSE,
@@ -581,7 +578,7 @@ where
 //     let wrap: T = from_glib_borrow(ptr as *mut T::InstanceStructType);
 //     let imp = application.get_impl();
 //
-//     imp.dbus_unregister(&wrap, )
+//     imp.dbus_unregister(&wrap, &from_glib_borrow(connection), &from_glib_borrow(object_path))
 // }
 
 // unsafe extern "C" fn application_handle_local_options<T: ApplicationBase>(ptr: *mut gio_ffi::GApplication,
