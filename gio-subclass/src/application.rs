@@ -29,9 +29,9 @@ pub trait ApplicationImpl<T: ApplicationBase>: ObjectImpl<T> + AnyImpl + 'static
         application.parent_command_line(cmd_line)
     }
 
-    // fn local_command_line(&self, application: &T, arguments: &Vec<String>) -> Option<i32> {
-    //     application.parent_local_command_line(arguments)
-    // }
+    fn local_command_line(&self, application: &T, arguments: &mut Vec<String>) -> Option<i32> {
+        application.parent_local_command_line(arguments)
+    }
 
     fn before_emit(&self, application: &T, platform_data: &glib::Variant){
         application.parent_before_emit(platform_data)
@@ -56,6 +56,14 @@ pub trait ApplicationImpl<T: ApplicationBase>: ObjectImpl<T> + AnyImpl + 'static
     fn shutdown(&self, application: &T) {
         application.parent_shutdown();
     }
+
+
+    //...
+
+
+    // fn handle_local_options(&self, application: &T, options: &glib::VariantDict) {
+    //     application.handle_local_options(options);
+    // }
 }
 
 pub trait ApplicationImplExt<T> {}
@@ -97,6 +105,7 @@ pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType {
             (*parent_klass)
                 .open
                 .map(|f| {
+                    //TODO: how do I guarantee pointer safety here?
                     let n_files = files.len() as i32;
                     f(
                         self.to_glib_none().0,
@@ -120,22 +129,28 @@ pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType {
         }
     }
 
-    // fn parent_local_command_line(&self, arguments: &Vec<String>) -> Option<i32> {
-    //     unsafe {
-    //         let klass = self.get_class();
-    //         let parent_klass = (*klass).get_parent_class() as *const gio_ffi::GApplicationClass;
-    //         let mut exit_status = 0;
-    //         (*parent_klass)
-    //             .local_command_line
-    //             .map(|f| {
-    //                 f(
-    //                     self.to_glib_none().0,
-    //                     arguments.to_glib_none().0, //TODO: conversion
-    //                     &mut exit_status,
-    //                 )
-    //             })
-    //     }
-    // }
+    fn parent_local_command_line(&self, arguments: &mut Vec<String>) -> Option<i32> {
+        unsafe {
+            let klass = self.get_class();
+            let parent_klass = (*klass).get_parent_class() as *const gio_ffi::GApplicationClass;
+            let mut exit_status = 0;
+            let success = (*parent_klass)
+                .local_command_line
+                .map(|f| {
+                    let mut args = arguments.to_glib_none().0;
+                    f(
+                        self.to_glib_none().0,
+                        &mut args,
+                        &mut exit_status,
+                    )
+                }).unwrap_or(glib_ffi::GFALSE);
+
+            match success {
+                glib_ffi::GTRUE => Some(exit_status),
+                _ => None
+            }
+        }
+    }
 
     fn parent_before_emit(&self, platform_data: &glib::Variant) {
         unsafe {
@@ -203,6 +218,21 @@ pub unsafe trait ApplicationBase: IsA<gio::Application> + ObjectType {
         }
     }
 
+    //...
+
+
+    // fn parent_handle_local_options(&self, options: &glib::VariantDict) {
+    //     unsafe {
+    //         let klass = self.get_class();
+    //         let parent_klass = (*klass).get_parent_class() as *const gio_ffi::GApplicationClass;
+    //         (*parent_klass)
+    //             .handle_local_options
+    //             .map(|f| f(self.to_glib_none().0, options.to_glib_none().0))
+    //             .unwrap_or(())
+    //     }
+    // }
+
+
 }
 
 pub unsafe trait ApplicationClassExt<T: ApplicationBase>
@@ -216,13 +246,17 @@ where
             klass.activate = Some(application_activate::<T>);
             klass.open = Some(application_open::<T>);
             klass.command_line = Some(application_command_line::<T>);
-            // klass.local_command_line = Some(application_local_command_line::<T>);
+            klass.local_command_line = Some(application_local_command_line::<T>);
             klass.before_emit = Some(application_before_emit::<T>);
             klass.after_emit = Some(application_after_emit::<T>);
             // klass.add_platform_data = Some(application_add_platform_data::<T>);
             klass.quit_mainloop = Some(application_quit_mainloop::<T>);
             klass.run_mainloop = Some(application_run_mainloop::<T>);
             klass.shutdown = Some(application_shutdown::<T>);
+
+            //...
+            // klass.handle_local_options = Some(application_handle_local_options::<T>);
+
 
         }
     }
@@ -272,10 +306,10 @@ macro_rules! box_gapplication_impl(
                 imp.command_line(application, cmd_line)
             }
 
-            // fn local_command_line(&self, application: &T, arguments: &Vec<String>) -> Option<i32>{
-            //     let imp: &$name<T> = self.as_ref();
-            //     imp.local_command_line(application, arguments)
-            // }
+            fn local_command_line(&self, application: &T, arguments: &mut Vec<String>) -> Option<i32>{
+                let imp: &$name<T> = self.as_ref();
+                imp.local_command_line(application, arguments)
+            }
 
             fn before_emit(&self, application: &T, platform_data: &glib::Variant){
                 let imp: &$name<T> = self.as_ref();
@@ -307,6 +341,15 @@ macro_rules! box_gapplication_impl(
                 let imp: &$name<T> = self.as_ref();
                 imp.shutdown(application)
             }
+
+
+
+
+            // no translation for GVariantDict
+            // fn handle_local_options(&self, application: &T, options: &glib::VariantDict){
+            //     let imp: &$name<T> = self.as_ref();
+            //     imp.handle_local_options(application, options)
+            // }
 
         }
     };
@@ -391,29 +434,32 @@ where
     imp.command_line(&wrap, &from_glib_borrow(cmd_line))
 }
 
-// unsafe extern "C" fn application_local_command_line<T: ApplicationBase>(
-//     ptr: *mut gio_ffi::GApplication,
-//     arguments: *mut *mut *mut libc::c_char,
-//     exit_status: *mut libc::c_int,
-// ) -> glib_ffi::gboolean
-// where
-//     T::ImplType: ApplicationImpl<T>,
-// {
-//     callback_guard!();
-//     floating_reference_guard!(ptr);
-//     let application = &*(ptr as *mut T::InstanceStructType);
-//     let wrap: T = from_glib_borrow(ptr as *mut T::InstanceStructType);
-//     let imp = application.get_impl();
-//
-//     //TODO: conversion
-//     match imp.local_command_line(&wrap, &from_glib_borrow(arguments)) {
-//         Some(status) => {
-//             *exit_status = status;
-//             1
-//         }
-//         None => 0,
-//     }
-// }
+unsafe extern "C" fn application_local_command_line<T: ApplicationBase>(
+    ptr: *mut gio_ffi::GApplication,
+    arguments: *mut *mut *mut libc::c_char,
+    exit_status: *mut libc::c_int,
+) -> glib_ffi::gboolean
+where
+    T::ImplType: ApplicationImpl<T>,
+{
+    callback_guard!();
+    floating_reference_guard!(ptr);
+    let application = &*(ptr as *mut T::InstanceStructType);
+    let wrap: T = from_glib_borrow(ptr as *mut T::InstanceStructType);
+    let imp = application.get_impl();
+
+    //TODO: how do I guarantee pointer safety here?
+    let mut args = FromGlibPtrContainer::from_glib_none(ptr::read(arguments));
+
+    match imp.local_command_line(&wrap, &mut args) {
+        Some(ret) => {
+            *exit_status = ret;
+            ptr::write(arguments, args.to_glib_none().0);
+            glib_ffi::GTRUE
+        }
+        None => glib_ffi::GFALSE,
+    }
+}
 
 unsafe extern "C" fn application_before_emit<T: ApplicationBase>(
     ptr: *mut gio_ffi::GApplication,
@@ -505,7 +551,52 @@ where
 }
 
 
-//  pub dbus_register: Option<unsafe extern "C" fn(_: *mut GApplication, _: *mut GDBusConnection, _: *const c_char, _: *mut *mut GError) -> gboolean>,
-//  pub dbus_unregister: Option<unsafe extern "C" fn(_: *mut GApplication, _: *mut GDBusConnection, _: *const c_char)>,
-//  pub handle_local_options: Option<unsafe extern "C" fn(_: *mut GApplication, _: *mut GVariantDict) -> c_int>,
+// unsafe extern "C" fn application_dbus_register<T: ApplicationBase>(ptr: *mut gio_ffi::GApplication,
+//     connection: *mut gio_ffi::GDBusConnection,
+//     object_path: *const libc::c_char,
+//     error: *mut *mut glib_ffi::GError
+// ) -> glib_ffi::gboolean
+// where
+//     T::ImplType: ApplicationImpl<T>,
+// {
+//     callback_guard!();
+//     floating_reference_guard!(ptr);
+//     let application = &*(ptr as *mut T::InstanceStructType);
+//     let wrap: T = from_glib_borrow(ptr as *mut T::InstanceStructType);
+//     let imp = application.get_impl();
+//
+//     imp.dbus_register(&wrap, )
+// }
+
+// unsafe extern "C" fn application_dbus_unregister<T: ApplicationBase>(ptr: *mut gio_ffi::GApplication,
+//     connection: *mut gio_ffi::GDBusConnection,
+//     object_path: *const libc::c_char
+// ) -> glib_ffi::gboolean
+// where
+//     T::ImplType: ApplicationImpl<T>,
+// {
+//     callback_guard!();
+//     floating_reference_guard!(ptr);
+//     let application = &*(ptr as *mut T::InstanceStructType);
+//     let wrap: T = from_glib_borrow(ptr as *mut T::InstanceStructType);
+//     let imp = application.get_impl();
+//
+//     imp.dbus_unregister(&wrap, )
+// }
+
+// unsafe extern "C" fn application_handle_local_options<T: ApplicationBase>(ptr: *mut gio_ffi::GApplication,
+//     options: *mut glib_ffi::GVariantDict
+// ) -> libc::c_int
+// where
+//     T::ImplType: ApplicationImpl<T>,
+// {
+//     callback_guard!();
+//     floating_reference_guard!(ptr);
+//     let application = &*(ptr as *mut T::InstanceStructType);
+//     let wrap: T = from_glib_borrow(ptr as *mut T::InstanceStructType);
+//     let imp = application.get_impl();
+//
+//     imp.handle_local_options(&wrap,  &from_glib_borrow(options))
+// }
+
 //  pub padding: [gpointer; 8],
