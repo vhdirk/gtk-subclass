@@ -22,5 +22,7 @@ gio = { git = "https://github.com/gtk-rs/gio" }
 cairo-rs = { git = "https://github.com/gtk-rs/cairo" }
 pango = { git = "https://github.com/gtk-rs/pango" }
 
+gtk-test = { git = "https://github.com/gtk-rs/gtk-test" }
+
 gobject-subclass = { git="https://github.com/sdroege/gobject-subclass" }
 gio-subclass = { git="https://github.com/sdroege/gobject-subclass" }

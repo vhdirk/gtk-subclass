@@ -1,4 +1,4 @@
-//! # Basic Sample
+//! # Basic test
 //!
 //! This sample demonstrates how to create a toplevel `window`, set its title, size and
 //! position, how to add a `button` to this `window` and how to connect signals with
@@ -21,6 +21,9 @@ extern crate gio_sys as gio_ffi;
 
 extern crate cairo;
 extern crate pango;
+
+#[macro_use]
+extern crate gtk_test;
 
 #[macro_use]
 extern crate gobject_subclass;
@@ -66,7 +69,7 @@ macro_rules! clone {
 mod imp {
     use super::*;
 
-    pub struct SimpleApplication {}
+    pub struct SimpleApplication;
 
     static PROPERTIES: [Property; 0] = [];
 
@@ -117,39 +120,21 @@ mod imp {
         }
     }
 
-
-    impl ObjectImpl<Application> for SimpleApplication {
-        fn set_property(&self, _obj: &glib::Object, id: u32, value: &glib::Value) {
-            let prop = &PROPERTIES[id as usize];
-
-            match *prop {
-                _ => unimplemented!(),
-            }
-        }
-
-        fn get_property(&self, _obj: &glib::Object, id: u32) -> Result<glib::Value, ()> {
-            let prop = &PROPERTIES[id as usize];
-
-            match *prop {
-                _ => unimplemented!(),
-            }
-        }
-    }
-    impl GApplicationImpl<Application> for SimpleApplication {
-
+    impl GApplicationImpl<Application> for SimpleApplication
+    {
         fn startup(&self, application: &Application){
             application.parent_startup();
 
             self.build_ui(application);
         }
-
-
     }
+
     impl ApplicationImpl<Application> for SimpleApplication {}
 
     pub struct SimpleApplicationStatic;
 
-    impl ImplTypeStatic<Application> for SimpleApplicationStatic {
+    impl ImplTypeStatic<Application> for SimpleApplicationStatic
+    {
         fn get_name(&self) -> &str {
             "SimpleApplication"
         }
