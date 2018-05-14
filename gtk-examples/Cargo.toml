@@ -21,8 +21,8 @@ gtk-sys = { git = "https://github.com/gtk-rs/sys" }
 gio-sys = { git = "https://github.com/gtk-rs/sys" }
 
 gobject-subclass = { git = "https://github.com/sdroege/gobject-subclass" }
-gio-subclass= { path= "../gio-subclass"}
-gtk-subclass= { path= "../gtk-subclass"}
+gio-subclass = { git="https://github.com/sdroege/gobject-subclass" }
+gtk-subclass = { path= "../gtk-subclass"}
 
 [[bin]]
 name = "cell-renderer-example"

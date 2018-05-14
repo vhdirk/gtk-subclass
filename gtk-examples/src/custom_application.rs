@@ -1,10 +1,8 @@
 use std::ptr;
 use std::mem;
-use std::cell::RefCell;
 use std::ops::Deref;
 use std::sync::{Once, ONCE_INIT};
 
-use cairo;
 use glib;
 use glib::prelude::*;
 use gtk;
@@ -18,9 +16,8 @@ use gio_ffi;
 
 use gobject_subclass::object::*;
 
-use gio_subclass::{Application as GApplication,
-                   ApplicationClassExt as GApplicationClassExt,
-                   ApplicationImpl as GApplicationImpl};
+use gio_subclass::application::{Application as GApplication,
+                                ApplicationImpl as GApplicationImpl};
 
 use gtk_subclass::application::*;
 
@@ -77,9 +74,8 @@ mod imp {
             }
         }
     }
-
-    impl ApplicationImpl<Application> for CustomApplication {}
     impl GApplicationImpl<Application> for CustomApplication {}
+    impl ApplicationImpl<Application> for CustomApplication {}
 
     pub struct CustomApplicationStatic;
 
@@ -96,9 +92,6 @@ mod imp {
             CustomApplication::class_init(klass);
         }
     }
-
-
-
 }
 
 

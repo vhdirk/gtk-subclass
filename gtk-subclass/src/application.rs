@@ -1,9 +1,6 @@
 use std::mem;
 use std::ptr;
 
-use cairo;
-use cairo_ffi;
-use gdk_ffi;
 use glib;
 use glib::translate::*;
 use glib::IsA;
@@ -17,9 +14,9 @@ use gio_ffi;
 use gobject_subclass::anyimpl::*;
 use gobject_subclass::object::*;
 
-use gio_subclass::{Application as GApplication,
-                   ApplicationClassExt as GApplicationClassExt,
-                   ApplicationImpl as GApplicationImpl};
+use gio_subclass::application::{ApplicationClassExt as GApplicationClassExt,
+                                ApplicationImpl as GApplicationImpl,
+                                ArgumentList};
 
 
 pub trait ApplicationImpl<T: ApplicationBase>:
@@ -52,7 +49,9 @@ where
 glib_wrapper! {
     pub struct Application(Object<InstanceStruct<Application>>):
     [gtk::Application => gtk_ffi::GtkApplication,
-     gio::Application => gio_ffi::GApplication];
+     gio::Application => gio_ffi::GApplication,
+     gio::ActionGroup => gio_ffi::GActionGroup,
+     gio::ActionMap => gio_ffi::GActionMap];
 
     match fn {
         get_type => || get_type::<Application>(),
