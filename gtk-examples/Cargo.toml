@@ -27,8 +27,3 @@ gtk-subclass = { path= "../gtk-subclass"}
 [[bin]]
 name = "cell-renderer-example"
 path = "src/cell_renderer_example.rs"
-
-
-[[bin]]
-name = "application-example"
-path = "src/application_example.rs"
