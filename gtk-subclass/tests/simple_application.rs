@@ -175,7 +175,7 @@ impl SimpleApplication {
     pub fn new<'a, I: Into<Option<&'a str>>>(application_id: I, flags: gio::ApplicationFlags) -> Result<SimpleApplication, glib::BoolError> {
         use glib::object::Downcast;
 
-        // shouldn't gtk_ffi::GtkApplication call this for us?
+        // see gtk-rs/gtk#555
         try!(gtk::init());
 
         unsafe {
