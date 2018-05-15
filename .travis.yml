@@ -4,10 +4,12 @@ rust:
   - nightly
   - beta
   - stable
+cache:
+  cargo: true
 
-env:
-  - GTK=3.4
-  - GTK=3.18
+matrix:
+  allow_failures:
+    - rust: nightly
 
 addons:
   apt:
@@ -30,7 +32,5 @@ before_script:
 
 script:
   - rustc --version
-  - cargo install clippy || touch clippy_failed
-  - if [ ! -f clippy_failed ]; then cargo clippy; fi
   - cargo build
   - cargo test -- --test-threads 1
