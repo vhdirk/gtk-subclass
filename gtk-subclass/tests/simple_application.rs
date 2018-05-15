@@ -8,7 +8,6 @@ use std::ptr;
 use std::mem;
 use std::ops::Deref;
 use std::sync::{Once, ONCE_INIT};
-use std::cell::Cell;
 
 extern crate gdk;
 extern crate gio;
@@ -34,12 +33,8 @@ use glib::translate::*;
 use gio::prelude::*;
 use gtk::prelude::*;
 
-use std::env::args;
-
 use gobject_subclass::object::*;
-
 use gio_subclass::application::{Application as GApplication, ApplicationImpl, ApplicationBase};
-
 use gtk_subclass::application::*;
 
 
@@ -65,9 +60,7 @@ macro_rules! clone {
 mod imp {
     use super::*;
 
-    pub struct SimpleApplication{
-        pub window: Cell<Option<gtk::ApplicationWindow>>
-    }
+    pub struct SimpleApplication;
 
     static PROPERTIES: [Property; 0] = [];
 
@@ -92,9 +85,7 @@ mod imp {
         }
 
         fn init(_application: &Application) -> Box<GtkApplicationImpl<Application>> {
-            let imp = Self {
-                window: Cell::new(None)
-            };
+            let imp = Self {};
             Box::new(imp)
         }
 
@@ -112,14 +103,14 @@ mod imp {
                 gtk::Inhibit(false)
             }));
 
+            window.connect_property_focus_visible_notify(clone!(window => move |_| {
+                window.destroy();
+            }));
+
             let button = gtk::Button::new_with_label("Click me!");
 
             window.add(&button);
-
             window.show_all();
-
-            self.window.set(Some(window))
-
         }
     }
 
@@ -215,14 +206,6 @@ fn test_create() {
                                        .expect("Initialization failed...");
 
     application.connect_activate(|_| {});
-
-    gtk::timeout_add_seconds(1, clone!(application => move || {
-        let window_opt = application.window.take();
-        assert!(window_opt.is_some());
-
-        window_opt.unwrap().destroy();
-        glib::Continue(false)
-    }));
 
     // this runs the mainloop, so we can't use gtk-test here!
     application.run(&["--local".to_string()]);
