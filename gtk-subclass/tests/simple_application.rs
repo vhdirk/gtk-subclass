@@ -8,6 +8,7 @@ use std::ptr;
 use std::mem;
 use std::ops::Deref;
 use std::sync::{Once, ONCE_INIT};
+use std::cell::Cell;
 
 extern crate gdk;
 extern crate gio;
@@ -67,7 +68,9 @@ macro_rules! clone {
 mod imp {
     use super::*;
 
-    pub struct SimpleApplication;
+    pub struct SimpleApplication{
+        pub window: Cell<Option<gtk::ApplicationWindow>>
+    }
 
     static PROPERTIES: [Property; 0] = [];
 
@@ -92,7 +95,9 @@ mod imp {
         }
 
         fn init(_application: &Application) -> Box<GtkApplicationImpl<Application>> {
-            let imp = Self {};
+            let imp = Self {
+                window: Cell::new(None)
+            };
             Box::new(imp)
         }
 
@@ -115,6 +120,9 @@ mod imp {
             window.add(&button);
 
             window.show_all();
+
+            self.window.set(Some(window))
+
         }
     }
 
@@ -169,6 +177,8 @@ glib_wrapper! {
 impl SimpleApplication {
     pub fn new<'a, I: Into<Option<&'a str>>>(application_id: I, flags: gio::ApplicationFlags) -> Result<SimpleApplication, glib::BoolError> {
         use glib::object::Downcast;
+
+        // shouldn't gtk_ffi::GtkApplication call this for us?
         try!(gtk::init());
 
         unsafe {
@@ -209,5 +219,15 @@ fn test_create() {
 
     application.connect_activate(|_| {});
 
+    gtk::timeout_add_seconds(1, clone!(application => move || {
+        let window_opt = application.window.take();
+        assert!(window_opt.is_some());
+
+        window_opt.unwrap().destroy();
+        glib::Continue(false)
+    }));
+
+    // this runs the mainloop, so we can't use gtk-test here!
     application.run(&["--local".to_string()]);
+
 }
