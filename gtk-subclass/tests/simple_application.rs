@@ -24,9 +24,6 @@ extern crate cairo;
 extern crate pango;
 
 #[macro_use]
-extern crate gtk_test;
-
-#[macro_use]
 extern crate gobject_subclass;
 
 #[macro_use]

@@ -24,6 +24,3 @@ pango = { git = "https://github.com/gtk-rs/pango" }
 
 gobject-subclass = { git = "https://github.com/sdroege/gobject-subclass" }
 gio-subclass = { git = "https://github.com/sdroege/gobject-subclass" }
-
-[dev-dependencies]
-gtk-test = { git = "https://github.com/gtk-rs/gtk-test" }
