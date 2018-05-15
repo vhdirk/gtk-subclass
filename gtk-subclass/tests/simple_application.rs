@@ -40,9 +40,7 @@ use std::env::args;
 
 use gobject_subclass::object::*;
 
-use gio_subclass::application::{Application as GApplication,
-                                ApplicationImpl as GApplicationImpl,
-                                ApplicationBase as GApplicationBase};
+use gio_subclass::application::{Application as GApplication, ApplicationImpl, ApplicationBase};
 
 use gtk_subclass::application::*;
 
@@ -93,7 +91,7 @@ mod imp {
             klass.install_properties(&PROPERTIES);
         }
 
-        fn init(_application: &Application) -> Box<ApplicationImpl<Application>> {
+        fn init(_application: &Application) -> Box<GtkApplicationImpl<Application>> {
             let imp = Self {};
             Box::new(imp)
         }
@@ -120,7 +118,9 @@ mod imp {
         }
     }
 
-    impl GApplicationImpl<Application> for SimpleApplication
+    impl ObjectImpl<Application> for SimpleApplication {}
+
+    impl ApplicationImpl<Application> for SimpleApplication
     {
         fn startup(&self, application: &Application){
             application.parent_startup();
@@ -129,7 +129,8 @@ mod imp {
         }
     }
 
-    impl ApplicationImpl<Application> for SimpleApplication {}
+    impl GtkApplicationImpl<Application> for SimpleApplication {}
+
 
     pub struct SimpleApplicationStatic;
 
@@ -139,7 +140,7 @@ mod imp {
             "SimpleApplication"
         }
 
-        fn new(&self, application: &Application) -> Box<ApplicationImpl<Application>> {
+        fn new(&self, application: &Application) -> Box<GtkApplicationImpl<Application>> {
             SimpleApplication::init(application)
         }
 

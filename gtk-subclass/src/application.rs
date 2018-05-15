@@ -14,13 +14,11 @@ use gio_ffi;
 use gobject_subclass::anyimpl::*;
 use gobject_subclass::object::*;
 
-use gio_subclass::application::{ApplicationClassExt as GApplicationClassExt,
-                                ApplicationImpl as GApplicationImpl,
-                                ArgumentList};
+use gio_subclass::application::{ApplicationClassExt, ApplicationImpl, ArgumentList};
 
 
-pub trait ApplicationImpl<T: ApplicationBase>:
-    ObjectImpl<T> + GApplicationImpl<T> + AnyImpl + 'static
+pub trait GtkApplicationImpl<T: GtkApplicationBase>:
+    ObjectImpl<T> + ApplicationImpl<T> + AnyImpl + 'static
 {
     fn window_added(&self, application: &T, window: &gtk::Window) {
         application.parent_window_added(window)
@@ -31,12 +29,12 @@ pub trait ApplicationImpl<T: ApplicationBase>:
     }
 }
 
-pub trait ApplicationImplExt<T> {}
+pub trait GtkApplicationImplExt<T> {}
 
 
-any_impl!(ApplicationBase, ApplicationImpl);
+any_impl!(GtkApplicationBase, GtkApplicationImpl);
 
-pub unsafe trait ApplicationBase:
+pub unsafe trait GtkApplicationBase:
     IsA<gtk::Application> + IsA<gio::Application> + ObjectType {
 
     fn parent_window_added(&self, window: &gtk::Window) {
@@ -62,9 +60,9 @@ pub unsafe trait ApplicationBase:
     }
 }
 
-pub unsafe trait ApplicationClassExt<T: ApplicationBase>
+pub unsafe trait GtkApplicationClassExt<T: GtkApplicationBase>
 where
-    T::ImplType: ApplicationImpl<T>,
+    T::ImplType: GtkApplicationImpl<T>,
 {
     fn override_vfuncs(&mut self, _: &ClassInitToken) {
         unsafe {
@@ -87,21 +85,22 @@ glib_wrapper! {
     }
 }
 
-unsafe impl<T: IsA<gtk::Application> + IsA<gio::Application> + ObjectType> ApplicationBase for T {}
+unsafe impl<T: IsA<gtk::Application> + IsA<gio::Application> + ObjectType> GtkApplicationBase for T {}
 
 pub type ApplicationClass = ClassStruct<Application>;
 
 // FIXME: Boilerplate
-unsafe impl ApplicationClassExt<Application> for ApplicationClass {}
-unsafe impl GApplicationClassExt<Application> for ApplicationClass {}
 unsafe impl ObjectClassExt<Application> for ApplicationClass {}
+
+unsafe impl GtkApplicationClassExt<Application> for ApplicationClass {}
+unsafe impl ApplicationClassExt<Application> for ApplicationClass {}
 
 #[macro_export]
 macro_rules! box_gtk_application_impl(
     ($name:ident) => {
         box_gapplication_impl!($name);
 
-        impl<T: $crate::application::ApplicationBase> $crate::application::ApplicationImpl<T> for Box<$name<T>>
+        impl<T: $crate::application::GtkApplicationBase> $crate::application::GtkApplicationImpl<T> for Box<$name<T>>
         {
             fn window_added(&self, application: &T, window: &gtk::Window){
                 let imp: &$name<T> = self.as_ref();
@@ -116,29 +115,29 @@ macro_rules! box_gtk_application_impl(
     };
 );
 
-box_gtk_application_impl!(ApplicationImpl);
+box_gtk_application_impl!(GtkApplicationImpl);
 
 impl ObjectType for Application {
     const NAME: &'static str = "RsGtkApplication";
     type ParentType = gtk::Application;
-    type ImplType = Box<ApplicationImpl<Self>>;
+    type ImplType = Box<GtkApplicationImpl<Self>>;
     type InstanceStructType = InstanceStruct<Self>;
 
     fn class_init(token: &ClassInitToken, klass: &mut ApplicationClass) {
         ObjectClassExt::override_vfuncs(klass, token);
-        GApplicationClassExt::override_vfuncs(klass, token);
         ApplicationClassExt::override_vfuncs(klass, token);
+        GtkApplicationClassExt::override_vfuncs(klass, token);
     }
 
     object_type_fns!();
 }
 
 
-unsafe extern "C" fn application_window_added<T: ApplicationBase>(
+unsafe extern "C" fn application_window_added<T: GtkApplicationBase>(
     ptr: *mut gtk_ffi::GtkApplication,
     window: *mut gtk_ffi::GtkWindow)
 where
-    T::ImplType: ApplicationImpl<T>,
+    T::ImplType: GtkApplicationImpl<T>,
 {
     callback_guard!();
     floating_reference_guard!(ptr);
@@ -149,11 +148,11 @@ where
     imp.window_added(&wrap, &from_glib_borrow(window))
 }
 
-unsafe extern "C" fn application_window_removed<T: ApplicationBase>(
+unsafe extern "C" fn application_window_removed<T: GtkApplicationBase>(
     ptr: *mut gtk_ffi::GtkApplication,
     window: *mut gtk_ffi::GtkWindow)
 where
-    T::ImplType: ApplicationImpl<T>,
+    T::ImplType: GtkApplicationImpl<T>,
 {
     callback_guard!();
     floating_reference_guard!(ptr);
